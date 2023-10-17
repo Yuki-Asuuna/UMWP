@@ -138,7 +138,7 @@ if __name__ == '__main__':
     file_path = "{}_{}_{}_T_{}.jsonl".format(model_name, input_form, model_name, temperature)
     if not os.path.exists(file_path):
         with open(file_path, mode="w") as f:
-            pass  # 创建空文件
+            pass
 
     for item in tqdm(s.FetchAll()):
         # print("QID:{} Q:{} A:{}".format(item.id, item.question, sendChatGPTRequest(item.question)))

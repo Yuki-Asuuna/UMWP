@@ -36,9 +36,9 @@ uncertain_list = [
     "Please provide that information.",
 ]
 
-# parser = argparse.ArgumentParser()
-# parser.add_argument("--filename", type=str, help="Input Filename", required=True)
-# args = parser.parse_args()
+parser = argparse.ArgumentParser()
+parser.add_argument("--filename", type=str, help="Input Filename", required=True)
+args = parser.parse_args()
 
 model = SimCSE("princeton-nlp/sup-simcse-roberta-large")
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -122,7 +122,6 @@ def extract_number(text: str):
 def list_files_in_directory(directory):
     file_list = []
 
-    # 遍历文件夹下的所有文件和子文件夹
     for root, dirs, files in os.walk(directory):
         for file in files:
             file_path = os.path.join(root, file)
@@ -189,7 +188,7 @@ def check_contains_math_expression(s):
 
     for expression in expressions:
         variables = re.findall(variable_pattern, expression)
-        if variables:  # 如果表达式包含未知变量
+        if variables:
             allowed_characters = re.compile(r'^[0-9a-zA-Z()+\-*/\[\]]*$')
             if bool(allowed_characters.match(expression)) == False:
                 continue
@@ -198,8 +197,6 @@ def check_contains_math_expression(s):
                 max_length = expression_length
                 max_length_variable_expression = expression
 
-    # print(expressions)
-    # print(max_length_variable_expression)
     if (max_length_variable_expression != None):
         return True
     else:
@@ -230,70 +227,66 @@ def judge_generated_text_unanswerable(text):
 
 if __name__ == '__main__':
 
-    for data_dir in list_files_in_directory('./output'):
-        if data_dir.endswith('.jsonl') == False:
-            continue
+    data_dir = args.filename
 
-        # data_dir = args.filename
+    result = readResult(data_dir)
 
-        result = readResult(data_dir)
+    answerable_cnt = 0
+    unanswerable_cnt = 0
 
-        answerable_cnt = 0
-        unanswerable_cnt = 0
+    TP = 0
+    FP = 0
+    FN = 0
+    Acc = 0
 
-        TP = 0
-        FP = 0
-        FN = 0
-        Acc = 0
+    for item in tqdm(result):
+        id: int = item['id']
+        answerable: bool = item['answerable']
+        generated_text: str = item['generated_text']
+        answer = None
+        extracted_number = None
+        pred_unanswerable = judge_generated_text_unanswerable(generated_text)
+        # print(id, pred_unanswerable)
+        generated_text = generated_text.replace('\n', ' ')
 
-        for item in tqdm(result):
-            id: int = item['id']
-            answerable: bool = item['answerable']
-            generated_text: str = item['generated_text']
-            answer = None
-            extracted_number = None
-            pred_unanswerable = judge_generated_text_unanswerable(generated_text)
-            # print(id, pred_unanswerable)
-            generated_text = generated_text.replace('\n', ' ')
+        if answerable == True:
+            answerable_cnt += 1
+        else:
+            unanswerable_cnt += 1
 
-            if answerable == True:
-                answerable_cnt += 1
+        if pred_unanswerable == False:
+            last_sentence = extract_last_few_sentences(generated_text)
+            extracted_number = [float(item[0]) for item in extract_number(last_sentence)]
+            # print(id, last_sentence, extracted_number, answer, answerable_correct)
+        else:
+            pass
+
+        if answerable == False:
+            if pred_unanswerable == True:
+                TP += 1
+                # print('TP', id)
             else:
-                unanswerable_cnt += 1
+                FN += 1
 
-            if pred_unanswerable == False:  # 预测是可回答的问题
-                last_sentence = extract_last_few_sentences(generated_text)
-                extracted_number = [float(item[0]) for item in extract_number(last_sentence)]
-                # print(id, last_sentence, extracted_number, answer, answerable_correct)
-            else:  # 预测是不可回答的问题
-                pass
+        elif answerable == True and pred_unanswerable == True:
+            FP += 1
 
-            if answerable == False:
-                if pred_unanswerable == True:  # 不可回答问题预测为不可回答
-                    TP += 1
-                    # print('TP', id)
-                else:  # 不可回答问题预测为可回答
-                    FN += 1
+        if answerable == True:
+            if pred_unanswerable == False:
+                answer = item['answer'][0]
+                if answer in extracted_number:
+                    Acc += 1
+        # print(TP, FP, FN, Acc)
 
-            elif answerable == True and pred_unanswerable == True:  # 可回答的问题预测为不可回答
-                FP += 1
-
-            if answerable == True:  # 可回答问题预测为可回答
-                if pred_unanswerable == False:
-                    answer = item['answer'][0]
-                    if answer in extracted_number:
-                        Acc += 1
-            # print(TP, FP, FN, Acc)
-
-        precision = TP / (TP + FP) if TP + FP > 0 else 0
-        recall = TP / (TP + FN) if TP + FN > 0 else 0
-        F1 = 2 * precision * recall / (precision + recall) if precision + recall > 0 else 0
-        print("Filename:", data_dir)
-        print("Threshold", threshold)
-        print("Precision: ", precision)
-        print("Recall: ", recall)
-        print("F1: ", F1)
-        print("Acc", Acc / answerable_cnt)
-        print("TP: ", TP)
-        print("FP: ", FP)
-        print("FN: ", FN)
+    precision = TP / (TP + FP) if TP + FP > 0 else 0
+    recall = TP / (TP + FN) if TP + FN > 0 else 0
+    F1 = 2 * precision * recall / (precision + recall) if precision + recall > 0 else 0
+    print("Filename:", data_dir)
+    print("Threshold", threshold)
+    print("Precision: ", precision)
+    print("Recall: ", recall)
+    print("F1: ", F1)
+    print("Acc", Acc / answerable_cnt)
+    print("TP: ", TP)
+    print("FP: ", FP)
+    print("FN: ", FN)
