@@ -4,6 +4,12 @@
 
 
 
+## Introduction
+
+![](/assets/intro.png)
+
+
+
 ## Dataset
 
 The *UMWP* dataset is located in the [StandardDataset.json](data/StandardDataset.json) file. 
@@ -48,11 +54,25 @@ Below are two examples of the data:
 
 
 
+| **Attribute** | **Type** | **Description**                                              |
+| ------------- | -------- | ------------------------------------------------------------ |
+| question_id   | Integer  | Question ID                                                  |
+| question      | String   | Description                                                  |
+| answer        | List     | Answer                                                       |
+| answerable    | Bool     | Answerable or Unanswerable                                   |
+| relevant_ids  | List     | Relevant Question ID                                         |
+| category      | Integer  | If it's an Answerable Question, then the category is set to 0. <br />If it's an Unanswerable Question, the category takes values from 1 to 5. |
+| source        | String   | Data Source                                                  |
+
+
+
 ## Installation
 
 Python 3.9
 
 ```bash
+conda create -n UMWP python=3.9
+conda activate UMWP
 pip install -r requirements.txt
 ```
 
