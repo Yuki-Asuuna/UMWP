@@ -80,7 +80,7 @@ pip install -r requirements.txt
 
 ## Run
 
-Here is an example of generating the output of the `gpt-3.5-turbo-0613 ` model under the ICL input form with `Temperature=0.7`. `sk-xxx` is your openAI API-KEY.
+Here is an example of generating the output of the `gpt-3.5-turbo-0613` model under the ICL input form with `Temperature=0.7`. `sk-xxx` is your openAI API-KEY.
 
 ```bash
 python run.py --input-form ICL --model-name gpt-3.5-turbo-0613 --temperature 0.7 --API-Key sk-xxx 
